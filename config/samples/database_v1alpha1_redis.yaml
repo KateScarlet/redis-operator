@@ -1,0 +1,23 @@
+apiVersion: database.phosphorlee.xyz/v1alpha1
+kind: Redis
+metadata:
+  labels:
+    app.kubernetes.io/name: redis-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: redis-test
+spec:
+  image: dockerpull.cn/library/redis:7.4
+  password: "111"
+  replicas: 3
+  AOF:
+    enabled: true
+    fsync: everysec
+  exporter:
+    enabled: true
+    image: dockerpull.cn/oliver006/redis_exporter:latest
+  volume:
+    size: 5Gi
+  sentinel:
+    enabled: true
+    replicas: 3
+    image: dockerpull.cn/library/redis:7.4
