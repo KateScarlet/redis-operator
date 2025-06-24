@@ -388,6 +388,7 @@ func (r *RedisReconciler) reconcileRedisSentinelDeployment(ctx context.Context, 
 				}
 				return ctrl.Result{}, err
 			}
+			return ctrl.Result{}, nil
 		}
 		if redis.Spec.Sentinel.Replicas != *foundDep.Spec.Replicas {
 			foundDep.Spec.Replicas = &redis.Spec.Sentinel.Replicas
