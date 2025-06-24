@@ -28,14 +28,14 @@ func DeploymentForRedisSentinel(redis *databasev1alpha1.Redis, scheme *runtime.S
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": redis.Name + "-sentinel",
+					"app.kubernetes.io/name": redis.Name + "-sentinel",
 				},
 			},
 			Replicas: &replicas,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: ctrl.ObjectMeta{
 					Labels: map[string]string{
-						"app": redis.Name + "-sentinel",
+						"app.kubernetes.io/name": redis.Name + "-sentinel",
 					},
 				},
 				Spec: corev1.PodSpec{
