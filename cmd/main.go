@@ -39,6 +39,7 @@ import (
 
 	databasev1alpha1 "github.com/KateScarlet/redis-operator/api/v1alpha1"
 	"github.com/KateScarlet/redis-operator/internal/controller"
+	kruiseapi "github.com/openkruise/kruise-api"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -49,6 +50,8 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+
+	utilruntime.Must(kruiseapi.AddToScheme(scheme)) //加入Kruise API scheme
 
 	utilruntime.Must(databasev1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
