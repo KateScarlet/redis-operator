@@ -37,6 +37,8 @@ import (
 	databasev1alpha1 "github.com/KateScarlet/redis-operator/api/v1alpha1"
 	"github.com/KateScarlet/redis-operator/internal/resources"
 	"github.com/go-logr/logr"
+	kruisev1alpha1 "github.com/openkruise/kruise-api/apps/v1alpha1"
+	kruisev1beta1 "github.com/openkruise/kruise-api/apps/v1beta1"
 )
 
 const (
@@ -105,7 +107,12 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return res, err
 	}
 
-	res, err = r.reconcileRedisStatefulSet(ctx, redis, log, req)
+	res, err = r.reconcileRedisPodProbeMarker(ctx, redis, log)
+	if err != nil {
+		return res, err
+	}
+
+	res, err = r.reconcileRedisAdvancedStatefulSet(ctx, redis, log, req)
 	if err != nil {
 		return res, err
 	}
@@ -132,7 +139,8 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 func (r *RedisReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&databasev1alpha1.Redis{}).
-		Owns(&appsv1.StatefulSet{}).
+		Owns(&kruisev1beta1.StatefulSet{}).
+		Owns(&kruisev1alpha1.PodProbeMarker{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Service{}).
 		Named("redis").
@@ -208,11 +216,11 @@ func (r *RedisReconciler) reconcileRedisConfigMap(ctx context.Context, redis *da
 	return ctrl.Result{}, nil
 }
 
-func (r *RedisReconciler) reconcileRedisStatefulSet(ctx context.Context, redis *databasev1alpha1.Redis, log logr.Logger, req ctrl.Request) (ctrl.Result, error) {
-	foundSts := &appsv1.StatefulSet{}
+func (r *RedisReconciler) reconcileRedisAdvancedStatefulSet(ctx context.Context, redis *databasev1alpha1.Redis, log logr.Logger, req ctrl.Request) (ctrl.Result, error) {
+	foundSts := &kruisev1beta1.StatefulSet{}
 	err := r.Get(ctx, types.NamespacedName{Name: redis.Name, Namespace: redis.Namespace}, foundSts)
 	if err != nil && apierrors.IsNotFound(err) {
-		sts, err := resources.StatefulSetForRedis(redis, r.Scheme)
+		sts, err := resources.AdvancedStatefulSetForRedis(redis, r.Scheme)
 		if err != nil {
 			log.Error(err, "Failed to define new StatefulSet resource for Redis")
 			meta.SetStatusCondition(&redis.Status.Conditions, metav1.Condition{Type: typeAvailableRedis,
@@ -521,6 +529,37 @@ func (r *RedisReconciler) reconcileRedisSentinelClusterIPService(ctx context.Con
 			"Service.Namespace", foundSvc.Namespace, "Service.Name", foundSvc.Name)
 		return ctrl.Result{}, nil
 
+	}
+	return ctrl.Result{}, nil
+}
+
+func (r *RedisReconciler) reconcileRedisPodProbeMarker(ctx context.Context, redis *databasev1alpha1.Redis, log logr.Logger) (ctrl.Result, error) {
+	foundPpm := &kruisev1alpha1.PodProbeMarker{}
+	err := r.Get(ctx, types.NamespacedName{Name: redis.Name + "-podprobemarker", Namespace: redis.Namespace}, foundPpm)
+	if err != nil && apierrors.IsNotFound(err) {
+		sts, err := resources.PodProbeMarkerForRedis(redis, r.Scheme)
+		if err != nil {
+			log.Error(err, "Failed to define new PodProbeMarker resource for Redis")
+			meta.SetStatusCondition(&redis.Status.Conditions, metav1.Condition{Type: typeAvailableRedis,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create PodProbeMarker for the custom resource (%s): (%s)", redis.Name, err)})
+			if err := r.Status().Update(ctx, redis); err != nil {
+				log.Error(err, "Failed to update Redis status")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, err
+		}
+		log.Info("Creating a new PodProbeMarker",
+			"PodProbeMarker.Namespace", sts.Namespace, "PodProbeMarker.Name", sts.Name)
+		if err = r.Create(ctx, sts); err != nil {
+			log.Error(err, "Failed to create new PodProbeMarker",
+				"PodProbeMarker.Namespace", sts.Namespace, "PodProbeMarker.Name", sts.Name)
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get PodProbeMarker")
+		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }

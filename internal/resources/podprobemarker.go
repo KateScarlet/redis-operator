@@ -13,9 +13,7 @@ import (
 	kruisev1alpha1 "github.com/openkruise/kruise-api/apps/v1alpha1"
 )
 
-var probeCommandTemplate = `
-PASSWORD=111
-ROLE=$(redis-cli -a "{{ .pass }}" INFO replication 2>/dev/null | grep "^role:" | cut -d':' -f2 | tr -d '\r')
+var probeCommandTemplate = `ROLE=$(redis-cli -a "{{ .pass }}" ROLE 2>/dev/null | awk 'NR==1{print $1}' | tr -d '\r')
 if [ "$ROLE" = "master" ]; then
     exit 0
 else
@@ -54,11 +52,24 @@ func PodProbeMarkerForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Schem
 					Probe: corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							Exec: &corev1.ExecAction{
-								Command: []string{"bash", "-c", buf.String()},
+								Command: []string{"/bin/bash", "-c", buf.String()},
 							},
 						},
+						InitialDelaySeconds: 15,
+						PeriodSeconds:       5,
 					},
 				},
+				MarkerPolicy: []kruisev1alpha1.ProbeMarkerPolicy{{
+					State: "Succeeded",
+					Labels: map[string]string{
+						"role": "master",
+					},
+				}, {
+					State: "Failed",
+					Labels: map[string]string{
+						"role": "slave",
+					},
+				}},
 			}},
 		},
 	}

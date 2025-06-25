@@ -1,7 +1,6 @@
 package resources
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -11,9 +10,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	databasev1alpha1 "github.com/KateScarlet/redis-operator/api/v1alpha1"
+	kruisev1beta1 "github.com/openkruise/kruise-api/apps/v1beta1"
 )
 
-func StatefulSetForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Scheme) (*appsv1.StatefulSet, error) {
+func AdvancedStatefulSetForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Scheme) (*kruisev1beta1.StatefulSet, error) {
 	var (
 		replicas   int32              = redis.Spec.Replicas
 		Containers []corev1.Container = make([]corev1.Container, 0)
@@ -66,7 +66,7 @@ fi
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Ports: []corev1.ContainerPort{{
 			ContainerPort: 6379,
-			Name:          "redis",
+			Name:          "redis-port",
 		}},
 		Command: []string{"/bin/bash", "-c"},
 		Args:    podArgs,
@@ -161,12 +161,12 @@ fi
 		}}
 	}
 
-	sts := &appsv1.StatefulSet{
+	sts := &kruisev1beta1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      redis.Name,
 			Namespace: redis.Namespace,
 		},
-		Spec: appsv1.StatefulSetSpec{
+		Spec: kruisev1beta1.StatefulSetSpec{
 			Replicas:    &replicas,
 			ServiceName: redis.Name + "-headless",
 			Selector: &metav1.LabelSelector{
