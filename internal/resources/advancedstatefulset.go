@@ -77,7 +77,7 @@ fi
 				},
 			},
 			InitialDelaySeconds: 30,
-			TimeoutSeconds:      5,
+			TimeoutSeconds:      3,
 			PeriodSeconds:       10,
 			SuccessThreshold:    1,
 			FailureThreshold:    3,
@@ -127,8 +127,8 @@ fi
 					corev1.ResourceMemory: resource.MustParse("128Mi"),
 				},
 				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("500m"),
-					corev1.ResourceMemory: resource.MustParse("1024Mi"),
+					corev1.ResourceCPU:    resource.MustParse("2000m"),
+					corev1.ResourceMemory: resource.MustParse("4Gi"),
 				},
 			},
 		}
@@ -141,10 +141,6 @@ fi
 		if volumeSize == "" {
 			volumeSize = "10Gi"
 		}
-		volumeStorageClass := &redis.Spec.Volume.StorageClass
-		if redis.Spec.Volume.StorageClass == "" {
-			volumeStorageClass = nil
-		}
 		stsVolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "data",
@@ -156,7 +152,7 @@ fi
 						corev1.ResourceStorage: resource.MustParse(volumeSize),
 					},
 				},
-				StorageClassName: volumeStorageClass,
+				StorageClassName: redis.Spec.Volume.StorageClass,
 			},
 		}}
 	}
@@ -178,6 +174,16 @@ fi
 				},
 				Spec: corev1.PodSpec{
 					Containers: Containers,
+					TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+						MaxSkew:           1,
+						TopologyKey:       "kubernetes.io/hostname",
+						WhenUnsatisfiable: corev1.ScheduleAnyway,
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app.kubernetes.io/name": redis.Name,
+							},
+						},
+					}},
 					Volumes: []corev1.Volume{{
 						Name: redis.Name + "-config",
 						VolumeSource: corev1.VolumeSource{

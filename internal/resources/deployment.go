@@ -6,6 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	databasev1alpha1 "github.com/KateScarlet/redis-operator/api/v1alpha1"
@@ -50,6 +51,18 @@ func DeploymentForRedisSentinel(redis *databasev1alpha1.Redis, scheme *runtime.S
 							Name:          "sentinel-port",
 							ContainerPort: 26379,
 						}},
+						LivenessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.FromInt(26379),
+								},
+							},
+							InitialDelaySeconds: 30,
+							TimeoutSeconds:      3,
+							PeriodSeconds:       10,
+							SuccessThreshold:    1,
+							FailureThreshold:    3,
+						},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      "redis-sentinel-config",
 							MountPath: "/config",
