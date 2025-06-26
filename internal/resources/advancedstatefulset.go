@@ -35,7 +35,7 @@ if [ ! -f "${INIT_MARKER_FILE}" ]; then
     exec redis-server /etc/redis.conf 
   fi
 else
-  sleep 10
+  sleep 15
   SENTINEL_HOST=${STATEFULSET_NAME}-sentinel.${NAMESPACE}
   MASTER_IP=$(redis-cli -h ${SENTINEL_HOST} -p 26379 --pass ${REDIS_PASSWORD} sentinel get-master-addr-by-name mymaster | head -n 1)
   MY_IP=$(getent hosts $(hostname -f) | awk '{ print $1 }')
