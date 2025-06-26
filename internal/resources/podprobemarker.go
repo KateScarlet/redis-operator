@@ -55,8 +55,9 @@ func PodProbeMarkerForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Schem
 								Command: []string{"/bin/bash", "-c", buf.String()},
 							},
 						},
-						InitialDelaySeconds: 15,
-						PeriodSeconds:       5,
+						InitialDelaySeconds: 10,
+						PeriodSeconds:       2,
+						FailureThreshold:    3,
 					},
 				},
 				MarkerPolicy: []kruisev1alpha1.ProbeMarkerPolicy{{

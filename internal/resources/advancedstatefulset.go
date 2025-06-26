@@ -23,31 +23,42 @@ func AdvancedStatefulSetForRedis(redis *databasev1alpha1.Redis, scheme *runtime.
 cp /conf/redis.conf /etc/redis.conf
 
 INIT_MARKER_FILE="/var/lib/redis/.redis_initialized"
+STATEFULSET_NAME=$(echo "$POD_NAME" | sed 's/-[0-9]*$//')
 if [ ! -f "${INIT_MARKER_FILE}" ]; then
-	touch "${INIT_MARKER_FILE}"
-	STATEFULSET_NAME=$(echo "$POD_NAME" | sed 's/-[0-9]*$//')
-	ORDINAL=$(hostname | awk -F'-' '{print $NF}')
-	if [ "$ORDINAL" = "0" ]; then
-	  exec redis-server /etc/redis.conf
-	else
-	  echo "replicaof $STATEFULSET_NAME-0.$STATEFULSET_NAME-headless 6379" >> /etc/redis.conf 
-	  echo "masterauth $REDIS_PASSWORD" >> /etc/redis.conf 
-	  exec redis-server /etc/redis.conf 
-	fi
+  touch "${INIT_MARKER_FILE}"
+  ORDINAL=$(hostname | awk -F'-' '{print $NF}')
+  if [ "$ORDINAL" = "0" ]; then
+    exec redis-server /etc/redis.conf
+  else
+    echo "replicaof $STATEFULSET_NAME-0.$STATEFULSET_NAME-headless 6379" >> /etc/redis.conf 
+    echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf 
+    exec redis-server /etc/redis.conf 
+  fi
 else
-	echo "masterauth $REDIS_PASSWORD" >> /etc/redis.conf
-	exec redis-server /etc/redis.conf
+  sleep 10
+  SENTINEL_HOST=${STATEFULSET_NAME}-sentinel.${NAMESPACE}
+  MASTER_IP=$(redis-cli -h ${SENTINEL_HOST} -p 26379 --pass ${REDIS_PASSWORD} sentinel get-master-addr-by-name mymaster | head -n 1)
+  MY_IP=$(getent hosts $(hostname -f) | awk '{ print $1 }')
+  if [ "${MY_IP}" = "${MASTER_IP}" ]; then
+    echo "Starting as MASTER"
+    redis-server /etc/redis/redis.conf
+  else
+    echo "Starting as SLAVE of ${MASTER_IP}"
+    echo "replicaof ${MASTER_IP} 6379" >> /etc/redis.conf 
+    echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf
+    exec redis-server /etc/redis.conf
+  fi
 fi
 `}
 	noSentinelArgs := []string{`
 cp /conf/redis.conf /etc/redis.conf
-STATEFULSET_NAME=$(echo "$POD_NAME" | sed 's/-[0-9]*$//')
+STATEFULSET_NAME=$(echo "${POD_NAME}" | sed 's/-[0-9]*$//')
 ORDINAL=$(hostname | awk -F'-' '{print $NF}')
 if [ "$ORDINAL" = "0" ]; then
   exec redis-server /etc/redis.conf
 else
-  echo "replicaof $STATEFULSET_NAME-0.$STATEFULSET_NAME-headless 6379" >> /etc/redis.conf 
-  echo "masterauth $REDIS_PASSWORD" >> /etc/redis.conf 
+  echo "replicaof ${STATEFULSET_NAME}-0.${STATEFULSET_NAME}-headless 6379" >> /etc/redis.conf 
+  echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf 
   exec redis-server /etc/redis.conf 
 fi
 `}
@@ -77,8 +88,20 @@ fi
 				},
 			},
 			InitialDelaySeconds: 30,
-			TimeoutSeconds:      3,
+			TimeoutSeconds:      2,
 			PeriodSeconds:       10,
+			SuccessThreshold:    1,
+			FailureThreshold:    3,
+		},
+		ReadinessProbe: &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(6379),
+				},
+			},
+			InitialDelaySeconds: 5,
+			TimeoutSeconds:      2,
+			PeriodSeconds:       5,
 			SuccessThreshold:    1,
 			FailureThreshold:    3,
 		},
@@ -92,6 +115,9 @@ fi
 		}, {
 			Name:  "REDIS_PASSWORD",
 			Value: redis.Spec.Password,
+		}, {
+			Name:  "NAMESPACE",
+			Value: redis.Namespace,
 		},
 		},
 		VolumeMounts: []corev1.VolumeMount{{

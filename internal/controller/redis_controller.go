@@ -102,6 +102,11 @@ func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return res, err
 	}
 
+	res, err = r.reconcileRedisMasterService(ctx, redis, log)
+	if err != nil {
+		return res, err
+	}
+
 	res, err = r.reconcileRedisConfigMap(ctx, redis, log)
 	if err != nil {
 		return res, err
@@ -153,12 +158,12 @@ func (r *RedisReconciler) reconcileRedisService(ctx context.Context, redis *data
 	if err != nil && apierrors.IsNotFound(err) {
 		svc, err := resources.HeadlessServiceForRedis(redis, r.Scheme)
 		if err != nil {
-			log.Error(err, "Failed to define new ConfigMap resource for Redis")
+			log.Error(err, "Failed to define new Service resource for Redis")
 
 			// The following implementation will update the status
 			meta.SetStatusCondition(&redis.Status.Conditions, metav1.Condition{Type: typeAvailableRedis,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
-				Message: fmt.Sprintf("Failed to create HeadlessService for the custom resource (%s): (%s)", redis.Name, err)})
+				Message: fmt.Sprintf("Failed to create Service for the custom resource (%s): (%s)", redis.Name, err)})
 
 			if err := r.Status().Update(ctx, redis); err != nil {
 				log.Error(err, "Failed to update Redis status")
@@ -168,17 +173,55 @@ func (r *RedisReconciler) reconcileRedisService(ctx context.Context, redis *data
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Creating a new HeadlessService",
-			"HeadlessService.Namespace", svc.Namespace, "HeadlessService.Name", svc.Name)
+		log.Info("Creating a new Service",
+			"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
 		if err = r.Create(ctx, svc); err != nil {
-			log.Error(err, "Failed to create new HeadlessService",
-				"HeadlessService.Namespace", svc.Namespace, "HeadlessService.Name", svc.Name)
+			log.Error(err, "Failed to create new Service",
+				"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
 			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 	} else if err != nil {
-		log.Error(err, "Failed to get HeadlessService")
+		log.Error(err, "Failed to get Service")
+		// Let's return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, nil
+}
+
+func (r *RedisReconciler) reconcileRedisMasterService(ctx context.Context, redis *databasev1alpha1.Redis, log logr.Logger) (ctrl.Result, error) {
+	foundSvc := &corev1.Service{}
+	err := r.Get(ctx, types.NamespacedName{Name: redis.Name + "-master-headless", Namespace: redis.Namespace}, foundSvc)
+	if err != nil && apierrors.IsNotFound(err) {
+		svc, err := resources.HeadlessServiceForRedisMaster(redis, r.Scheme)
+		if err != nil {
+			log.Error(err, "Failed to define new Service resource for Redis")
+
+			// The following implementation will update the status
+			meta.SetStatusCondition(&redis.Status.Conditions, metav1.Condition{Type: typeAvailableRedis,
+				Status: metav1.ConditionFalse, Reason: "Reconciling",
+				Message: fmt.Sprintf("Failed to create Service for the custom resource (%s): (%s)", redis.Name, err)})
+
+			if err := r.Status().Update(ctx, redis); err != nil {
+				log.Error(err, "Failed to update Redis status")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating a new Service",
+			"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		if err = r.Create(ctx, svc); err != nil {
+			log.Error(err, "Failed to create new Service",
+				"Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Service")
 		// Let's return the error for the reconciliation be re-trigged again
 		return ctrl.Result{}, err
 	}
