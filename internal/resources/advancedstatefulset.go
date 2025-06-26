@@ -74,7 +74,7 @@ ORDINAL=$(hostname | awk -F'-' '{print $NF}')
 if [ "$ORDINAL" = "0" ]; then
   exec redis-server /etc/redis.conf
 else
-  echo "replicaof ${STATEFULSET_NAME}-0.${STATEFULSET_NAME}-headless 6379" >> /etc/redis.conf 
+  echo "replicaof ${STATEFULSET_NAME}-0.${STATEFULSET_NAME}-headless.${NAMESPACE} 6379" >> /etc/redis.conf 
   echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf 
   exec redis-server /etc/redis.conf 
 fi
@@ -84,12 +84,8 @@ fi
 	} else {
 		podArgs = noSentinelArgs
 	}
-	redisImage := redis.Spec.Image
-	if redisImage == "" {
-		redisImage = "redis:7.4"
-	}
 	redisContainer := corev1.Container{
-		Image:           redisImage,
+		Image:           redis.Spec.Image,
 		Name:            "redis",
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Ports: []corev1.ContainerPort{{
@@ -137,6 +133,16 @@ fi
 			Value: redis.Namespace,
 		},
 		},
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    *redis.Spec.Resources.Requests.Cpu(),
+				corev1.ResourceMemory: *redis.Spec.Resources.Requests.Memory(),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    *redis.Spec.Resources.Limits.Cpu(),
+				corev1.ResourceMemory: *redis.Spec.Resources.Limits.Memory(),
+			},
+		},
 		VolumeMounts: []corev1.VolumeMount{{
 			Name:      "data",
 			MountPath: "/var/lib/redis",
@@ -166,12 +172,12 @@ fi
 			}},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("100m"),
-					corev1.ResourceMemory: resource.MustParse("128Mi"),
+					corev1.ResourceCPU:    *redis.Spec.Sentinel.Resources.Requests.Cpu(),
+					corev1.ResourceMemory: *redis.Spec.Sentinel.Resources.Requests.Memory(),
 				},
 				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("2000m"),
-					corev1.ResourceMemory: resource.MustParse("4Gi"),
+					corev1.ResourceCPU:    *redis.Spec.Sentinel.Resources.Limits.Cpu(),
+					corev1.ResourceMemory: *redis.Spec.Sentinel.Resources.Limits.Memory(),
 				},
 			},
 		}

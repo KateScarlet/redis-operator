@@ -17,9 +17,6 @@ func DeploymentForRedisSentinel(redis *databasev1alpha1.Redis, scheme *runtime.S
 		replicas int32 = redis.Spec.Sentinel.Replicas
 	)
 	redisSentinelImage := redis.Spec.Sentinel.Image
-	if redisSentinelImage == "" {
-		redisSentinelImage = "redis:7.4"
-	}
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: ctrl.ObjectMeta{
@@ -67,6 +64,16 @@ func DeploymentForRedisSentinel(redis *databasev1alpha1.Redis, scheme *runtime.S
 							Name:      "redis-sentinel-config",
 							MountPath: "/config",
 						}},
+					}},
+					TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+						MaxSkew:           1,
+						TopologyKey:       "kubernetes.io/hostname",
+						WhenUnsatisfiable: corev1.ScheduleAnyway,
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app.kubernetes.io/name": redis.Name + "-sentinel",
+							},
+						},
 					}},
 					RestartPolicy: "Always",
 					Volumes: []corev1.Volume{{

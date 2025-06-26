@@ -5,9 +5,17 @@ metadata:
     app.kubernetes.io/name: redis-operator
     app.kubernetes.io/managed-by: kustomize
   name: redis-test
+  namespace: default
 spec:
   image: dockerpull.cn/library/redis:7.4
   password: "111"
+  resources:
+    requests:
+      cpu: 2
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
   replicas: 3
   AOF:
     enabled: true
@@ -21,3 +29,10 @@ spec:
     enabled: true
     replicas: 3
     image: dockerpull.cn/library/redis:7.4
+    resources:
+      requests:
+        cpu: 1
+        memory: 1Gi
+      limits:
+        cpu: 1
+        memory: 1Gi

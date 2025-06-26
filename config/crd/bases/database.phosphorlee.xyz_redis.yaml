@@ -118,6 +118,7 @@ spec:
                     type: object
                 type: object
               image:
+                default: redis:7.4
                 type: string
               password:
                 type: string
@@ -188,6 +189,7 @@ spec:
                   enabled:
                     type: boolean
                   image:
+                    default: redis:7.4
                     type: string
                   replicas:
                     format: int32
@@ -260,6 +262,8 @@ spec:
                   storageclass:
                     type: string
                 type: object
+            required:
+            - password
             type: object
           status:
             description: RedisStatus defines the observed state of Redis.

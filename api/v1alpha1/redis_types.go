@@ -41,8 +41,9 @@ type RedisVolume struct {
 }
 
 type RedisSentinel struct {
-	Enabled   bool                        `json:"enabled,omitempty"`
-	Replicas  int32                       `json:"replicas,omitempty"`
+	Enabled  bool  `json:"enabled,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
+	// +kubebuilder:default:="redis:7.4"
 	Image     string                      `json:"image,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
@@ -60,14 +61,16 @@ type RedisSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// +kubebuilder:default:="redis:7.4"
 	Image     string                      `json:"image,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	Exporter  SideCarContainer            `json:"exporter,omitempty"`
-	Password  string                      `json:"password,omitempty"`
-	Replicas  int32                       `json:"replicas,omitempty"`
-	Volume    RedisVolume                 `json:"volume,omitempty"`
-	Sentinel  RedisSentinel               `json:"sentinel,omitempty"`
-	AOF       RedisAOFConfig              `json:"AOF,omitempty"`
+	// +kubebuilder:validation:Required
+	Password string         `json:"password,omitempty"`
+	Replicas int32          `json:"replicas,omitempty"`
+	Volume   RedisVolume    `json:"volume,omitempty"`
+	Sentinel RedisSentinel  `json:"sentinel,omitempty"`
+	AOF      RedisAOFConfig `json:"AOF,omitempty"`
 }
 
 // RedisStatus defines the observed state of Redis.
