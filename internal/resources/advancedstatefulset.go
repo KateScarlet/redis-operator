@@ -22,32 +22,49 @@ func AdvancedStatefulSetForRedis(redis *databasev1alpha1.Redis, scheme *runtime.
 	sentinelArgs := []string{`
 cp /conf/redis.conf /etc/redis.conf
 
-INIT_MARKER_FILE="/var/lib/redis/.redis_initialized"
 STATEFULSET_NAME=$(echo "$POD_NAME" | sed 's/-[0-9]*$//')
-if [ ! -f "${INIT_MARKER_FILE}" ]; then
-  touch "${INIT_MARKER_FILE}"
-  ORDINAL=$(hostname | awk -F'-' '{print $NF}')
-  if [ "$ORDINAL" = "0" ]; then
-    exec redis-server /etc/redis.conf
-  else
-    echo "replicaof $STATEFULSET_NAME-0.$STATEFULSET_NAME-headless 6379" >> /etc/redis.conf 
-    echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf 
-    exec redis-server /etc/redis.conf 
+SENTINEL_HOST=${STATEFULSET_NAME}-sentinel.${NAMESPACE}
+
+# === Sentinel get-master retry loop ===
+MAX_SENTINEL_RETRIES=10
+MASTER_IP=""
+
+for i in $(seq 1 $MAX_SENTINEL_RETRIES); do
+  MASTER_IP=$(redis-cli --raw -h "${SENTINEL_HOST}" -p 26379 -a "${REDIS_PASSWORD}" --no-auth-warning sentinel get-master-addr-by-name mymaster | head -n 1 || true)
+  if [[ "$MASTER_IP" != "" ]]; then
+    echo "Discovered master IP from Sentinel: $MASTER_IP"
+    break
   fi
+  echo "[$i/$MAX_SENTINEL_RETRIES] Waiting for Sentinel to return master..."
+  sleep 2
+done
+
+# === Decide master or replica ===
+MY_IP=$(getent hosts $(hostname -f) | awk '{ print $1 }')
+if [[ "${MY_IP}" == "${MASTER_IP}" || "${MASTER_IP}" == "" ]]; then
+  echo "Starting as MASTER"
+  redis-server /etc/redis.conf
 else
-  sleep 15
-  SENTINEL_HOST=${STATEFULSET_NAME}-sentinel.${NAMESPACE}
-  MASTER_IP=$(redis-cli -h ${SENTINEL_HOST} -p 26379 --pass ${REDIS_PASSWORD} sentinel get-master-addr-by-name mymaster | head -n 1)
-  MY_IP=$(getent hosts $(hostname -f) | awk '{ print $1 }')
-  if [ "${MY_IP}" = "${MASTER_IP}" ]; then
-    echo "Starting as MASTER"
-    redis-server /etc/redis/redis.conf
-  else
-    echo "Starting as SLAVE of ${MASTER_IP}"
-    echo "replicaof ${MASTER_IP} 6379" >> /etc/redis.conf 
-    echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf
+  RETRY_COUNT=1
+  MASTER_REACHABLE=false
+  while [[ $RETRY_COUNT -lt 16 ]]; do
+    MASTER_IP=$(redis-cli --raw -h "${SENTINEL_HOST}" -p 26379 -a "${REDIS_PASSWORD}" --no-auth-warning sentinel get-master-addr-by-name mymaster | head -n 1 || true)
+    if redis-cli -t 1 --raw -h ${MASTER_IP} -a ${REDIS_PASSWORD} --no-auth-warning ping | grep -q PONG; then
+      MASTER_REACHABLE=true
+      break
+    fi
+    echo "[$RETRY_COUNT/15] Ping to MASTER $MASTER_IP failed, retrying..."
+    sleep 1
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+  done
+  if [[ "$MASTER_REACHABLE" == "false" ]]; then
+    echo "Cannot reach MASTER at $MASTER_IP after retries. Starting as fallback MASTER"
     exec redis-server /etc/redis.conf
   fi
+  echo "Starting as SLAVE of ${MASTER_IP}"
+  echo "replicaof ${MASTER_IP} 6379" >> /etc/redis.conf 
+  echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis.conf
+  exec redis-server /etc/redis.conf
 fi
 `}
 	noSentinelArgs := []string{`
