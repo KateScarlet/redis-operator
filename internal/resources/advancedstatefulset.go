@@ -182,10 +182,6 @@ fi
 
 	var stsVolumeClaimTemplates []corev1.PersistentVolumeClaim
 	if true {
-		volumeSize := redis.Spec.Volume.Size
-		if volumeSize == "" {
-			volumeSize = "10Gi"
-		}
 		stsVolumeClaimTemplates = []corev1.PersistentVolumeClaim{{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "data",
@@ -194,7 +190,7 @@ fi
 				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: resource.MustParse(volumeSize),
+						corev1.ResourceStorage: resource.MustParse(redis.Spec.Volume.Size),
 					},
 				},
 				StorageClassName: redis.Spec.Volume.StorageClass,

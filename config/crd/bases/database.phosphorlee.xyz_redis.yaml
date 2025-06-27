@@ -188,6 +188,7 @@ spec:
               sentinel:
                 properties:
                   enabled:
+                    default: ture
                     type: boolean
                   image:
                     default: redis:7.4
@@ -259,6 +260,7 @@ spec:
               volume:
                 properties:
                   size:
+                    default: 10Gi
                     type: string
                   storageclass:
                     type: string

@@ -38,10 +38,12 @@ type RedisVolume struct {
 	// +optional
 	StorageClass *string `json:"storageclass,omitempty"`
 	// +optional
+	// +kubebuilder:default:="10Gi"
 	Size string `json:"size,omitempty"`
 }
 
 type RedisSentinel struct {
+	// +kubebuilder:default:="ture"
 	Enabled  bool  `json:"enabled,omitempty"`
 	Replicas int32 `json:"replicas,omitempty"`
 	// +kubebuilder:default:="redis:7.4"
