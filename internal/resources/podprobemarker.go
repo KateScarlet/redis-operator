@@ -74,5 +74,9 @@ func PodProbeMarkerForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Schem
 			}},
 		},
 	}
+
+	if err := ctrl.SetControllerReference(redis, ppm, scheme); err != nil {
+		return nil, err
+	}
 	return ppm, nil
 }

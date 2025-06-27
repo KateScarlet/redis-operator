@@ -11,10 +11,10 @@ spec:
   password: "111"
   resources:
     requests:
-      cpu: 2
+      cpu: "2"
       memory: 2Gi
     limits:
-      cpu: 2
+      cpu: "2"
       memory: 2Gi
   replicas: 3
   AOF:
@@ -31,8 +31,8 @@ spec:
     image: dockerpull.cn/library/redis:7.4
     resources:
       requests:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi
       limits:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi

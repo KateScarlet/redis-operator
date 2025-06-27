@@ -24,10 +24,11 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type SideCarContainer struct {
+type ExporterSideCar struct {
 	// +optional
 	Enabled bool `json:"enabled,omitempty"`
 	// +optional
+	// +kubebuilder:default:="oliver006/redis_exporter:latest"
 	Image string `json:"image,omitempty"`
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -64,7 +65,7 @@ type RedisSpec struct {
 	// +kubebuilder:default:="redis:7.4"
 	Image     string                      `json:"image,omitempty"`
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-	Exporter  SideCarContainer            `json:"exporter,omitempty"`
+	Exporter  ExporterSideCar             `json:"exporter,omitempty"`
 	// +kubebuilder:validation:Required
 	Password string         `json:"password,omitempty"`
 	Replicas int32          `json:"replicas,omitempty"`

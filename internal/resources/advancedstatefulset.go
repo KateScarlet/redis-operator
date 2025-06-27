@@ -154,12 +154,8 @@ fi
 	Containers = append(Containers, redisContainer)
 
 	if redis.Spec.Exporter.Enabled {
-		exporterImage := redis.Spec.Exporter.Image
-		if exporterImage == "" {
-			exporterImage = "oliver006/redis_exporter:latest"
-		}
 		exporterContainer := corev1.Container{
-			Image:           exporterImage,
+			Image:           redis.Spec.Exporter.Image,
 			Name:            "redis-exporter",
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Ports: []corev1.ContainerPort{{

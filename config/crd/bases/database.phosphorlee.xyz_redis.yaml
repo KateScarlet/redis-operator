@@ -55,6 +55,7 @@ spec:
                   enabled:
                     type: boolean
                   image:
+                    default: oliver006/redis_exporter:latest
                     type: string
                   resources:
                     description: ResourceRequirements describes the compute resource
