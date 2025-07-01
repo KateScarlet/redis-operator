@@ -188,7 +188,7 @@ spec:
               sentinel:
                 properties:
                   enabled:
-                    default: ture
+                    default: true
                     type: boolean
                   image:
                     default: redis:7.4

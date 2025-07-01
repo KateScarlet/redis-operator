@@ -43,7 +43,7 @@ type RedisVolume struct {
 }
 
 type RedisSentinel struct {
-	// +kubebuilder:default:="ture"
+	// +kubebuilder:default:=true
 	Enabled  bool  `json:"enabled,omitempty"`
 	Replicas int32 `json:"replicas,omitempty"`
 	// +kubebuilder:default:="redis:7.4"
