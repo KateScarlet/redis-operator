@@ -66,7 +66,7 @@ type RedisSpec struct {
 
 	Image     string               `json:"image,omitempty"`
 	Resources ResourceRequirements `json:"resources,omitempty"`
-	Exporter  SideCarContainer     `json:"exporter,omitempty"`
+	Monitor   SideCarContainer     `json:"monitor,omitempty"`
 	Password  string               `json:"password,omitempty"`
 	Replicas  int32                `json:"replicas,omitempty"`
 	Volume    RedisVolume          `json:"volume,omitempty"`

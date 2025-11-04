@@ -46,7 +46,9 @@ spec:
                   fsync:
                     type: string
                 type: object
-              exporter:
+              image:
+                type: string
+              monitor:
                 properties:
                   enabled:
                     type: boolean
@@ -64,8 +66,6 @@ spec:
                         type: object
                     type: object
                 type: object
-              image:
-                type: string
               password:
                 type: string
               replicas:

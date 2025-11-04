@@ -12,7 +12,7 @@ spec:
   AOF:
     enabled: true
     fsync: everysec
-  exporter:
+  monitor:
     enabled: true
     image: dockerpull.cn/oliver006/redis_exporter:latest
   volume:

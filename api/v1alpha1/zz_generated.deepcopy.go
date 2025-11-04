@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -119,7 +119,7 @@ func (in *RedisSentinel) DeepCopy() *RedisSentinel {
 func (in *RedisSpec) DeepCopyInto(out *RedisSpec) {
 	*out = *in
 	in.Resources.DeepCopyInto(&out.Resources)
-	in.Exporter.DeepCopyInto(&out.Exporter)
+	in.Monitor.DeepCopyInto(&out.Monitor)
 	out.Volume = in.Volume
 	in.Sentinel.DeepCopyInto(&out.Sentinel)
 	out.AOF = in.AOF

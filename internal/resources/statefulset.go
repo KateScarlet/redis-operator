@@ -104,8 +104,8 @@ fi
 	}
 	Containers = append(Containers, redisContainer)
 
-	if redis.Spec.Exporter.Enabled {
-		exporterImage := redis.Spec.Exporter.Image
+	if redis.Spec.Monitor.Enabled {
+		exporterImage := redis.Spec.Monitor.Image
 		if exporterImage == "" {
 			exporterImage = "oliver006/redis_exporter:latest"
 		}

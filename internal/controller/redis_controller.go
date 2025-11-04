@@ -259,10 +259,10 @@ func (r *RedisReconciler) reconcileRedisStatefulSet(ctx context.Context, redis *
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if redis.Spec.Exporter.Enabled {
+	if redis.Spec.Monitor.Enabled {
 		if len(foundSts.Spec.Template.Spec.Containers) < 2 {
 			foundSts.Spec.Template.Spec.Containers = append(foundSts.Spec.Template.Spec.Containers, corev1.Container{
-				Image:           redis.Spec.Exporter.Image,
+				Image:           redis.Spec.Monitor.Image,
 				Name:            "redis-exporter",
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Ports: []corev1.ContainerPort{{

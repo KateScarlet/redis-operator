@@ -18,9 +18,9 @@ func HeadlessServiceForRedis(redis *databasev1alpha1.Redis, scheme *runtime.Sche
 		TargetPort: intstr.FromInt(6379),
 	}}
 
-	if redis.Spec.Exporter.Enabled {
+	if redis.Spec.Monitor.Enabled {
 		servicePorts = append(servicePorts, corev1.ServicePort{
-			Name:       "exporter-port",
+			Name:       "monitor-port",
 			Port:       9121,
 			TargetPort: intstr.FromInt(9121),
 		})
