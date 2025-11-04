@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: redis-test
 spec:
-  image: dockerpull.cn/library/redis:7.4
+  image: dockerpull.pw/library/redis:7.4
   password: "111"
   replicas: 3
   AOF:
@@ -14,10 +14,10 @@ spec:
     fsync: everysec
   monitor:
     enabled: true
-    image: dockerpull.cn/oliver006/redis_exporter:latest
+    image: dockerpull.pw/oliver006/redis_exporter:latest
   volume:
     size: 5Gi
   sentinel:
     enabled: true
     replicas: 3
-    image: dockerpull.cn/library/redis:7.4
+    image: dockerpull.pw/library/redis:7.4
