@@ -8,7 +8,7 @@ metadata:
 spec:
   image: dockerpull.pw/library/redis:7.4
   password: "111"
-  replicas: 3
+  replicas: 2
   AOF:
     enabled: true
     fsync: everysec
@@ -16,7 +16,8 @@ spec:
     enabled: true
     image: dockerpull.pw/oliver006/redis_exporter:latest
   volume:
-    size: 5Gi
+    storageclass: standard
+    size: 10Gi
   sentinel:
     enabled: true
     replicas: 3

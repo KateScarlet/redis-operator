@@ -120,6 +120,9 @@ fi
 			Env: []corev1.EnvVar{{
 				Name:  "REDIS_ADDR",
 				Value: "redis://localhost:6379",
+			}, {
+				Name:  "REDIS_PASSWORD",
+				Value: redis.Spec.Password,
 			}},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
